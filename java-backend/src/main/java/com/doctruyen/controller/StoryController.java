@@ -108,12 +108,12 @@ public class StoryController {
         response.put("sources", storyService.getAllSources());
         
         // Add sort options
-        Map<String, String>[] sortOptions = new Map[]{
-            Map.of("value", "createdAt", "label", "Mới nhất"),
-            Map.of("value", "viewsTotal", "label", "Lượt xem"),
-            Map.of("value", "rating", "label", "Đánh giá"),
-            Map.of("value", "lastChapterUpdated", "label", "Cập nhật gần đây")
-        };
+        var sortOptions = java.util.Arrays.asList(
+            Map.ofEntries(Map.entry("value", "createdAt"), Map.entry("label", "Mới nhất")),
+            Map.ofEntries(Map.entry("value", "viewsTotal"), Map.entry("label", "Lượt xem")),
+            Map.ofEntries(Map.entry("value", "rating"), Map.entry("label", "Đánh giá")),
+            Map.ofEntries(Map.entry("value", "lastChapterUpdated"), Map.entry("label", "Cập nhật gần đây"))
+        );
         response.put("sort_options", sortOptions);
         
         return ResponseEntity.ok(response);
