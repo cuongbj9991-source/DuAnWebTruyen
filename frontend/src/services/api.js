@@ -4,7 +4,7 @@ import axios from 'axios';
 const STORY_SERVICE = process.env.REACT_APP_STORY_SERVICE || 'http://localhost:8081/api';
 const USER_SERVICE = process.env.REACT_APP_USER_SERVICE || 'http://localhost:5001/api';
 
-const createClient = (baseURL) => {
+const createClient = (baseURL, silent = false) => {
   const client = axios.create({
     baseURL,
     headers: {
@@ -21,11 +21,25 @@ const createClient = (baseURL) => {
     return config;
   });
 
+  // Suppress network errors for optional services in production
+  if (silent) {
+    client.interceptors.response.use(
+      response => response,
+      error => {
+        // Suppress only connection refused errors (optional services not deployed)
+        if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
+          return Promise.reject(error);
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+
   return client;
 };
 
 const storyClient = createClient(STORY_SERVICE);
-const userClient = createClient(USER_SERVICE);
+const userClient = createClient(USER_SERVICE, true); // Silent mode for optional service
 
 export const storyService = {
   // Lấy tất cả truyện

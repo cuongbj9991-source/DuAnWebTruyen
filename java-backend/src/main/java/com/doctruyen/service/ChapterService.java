@@ -53,6 +53,7 @@ public class ChapterService {
                 chapter.getChapterNumber(),
                 chapter.getTitle(),
                 chapter.getContent(),
+                chapter.getPages(),
                 chapter.getWordCount(),
                 chapter.getCreatedAt(),
                 chapter.getUpdatedAt()

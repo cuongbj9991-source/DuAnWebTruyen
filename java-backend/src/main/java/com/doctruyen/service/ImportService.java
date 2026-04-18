@@ -170,7 +170,11 @@ public class ImportService {
                     chapter.setTitle(ch.getTitle() != null && !ch.getTitle().isEmpty() ? 
                                     ch.getTitle() : ("Chương " + ch.getChapterNumber()));
                     
-                    // Fetch actual chapter content
+                    // Fetch actual chapter pages (images)
+                    String pages = mangaDexService.getChapterPages(ch.getId());
+                    chapter.setPages(pages);
+                    
+                    // Fetch actual chapter content as fallback
                     String content = mangaDexService.getChapterContent(ch.getId());
                     chapter.setContent(content);
                     chapter.setWordCount(content.length() / 5); // Rough estimate

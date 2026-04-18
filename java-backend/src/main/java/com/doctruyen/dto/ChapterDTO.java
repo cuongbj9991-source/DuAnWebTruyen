@@ -14,6 +14,7 @@ public class ChapterDTO {
     private Integer chapterNumber;
     private String title;
     private String content;
+    private String pages; // JSON array of image URLs
     private Integer wordCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
