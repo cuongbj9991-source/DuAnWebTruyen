@@ -14,7 +14,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/chapters")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "https://duanwebtruyen-production.up.railway.app"}, 
+             allowedHeaders = "*", 
+             methods = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST, org.springframework.web.bind.annotation.RequestMethod.PUT, org.springframework.web.bind.annotation.RequestMethod.DELETE},
+             allowCredentials = "true")
 public class ChapterController {
     private final ChapterService chapterService;
 
