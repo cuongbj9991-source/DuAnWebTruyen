@@ -33,10 +33,10 @@ public class StoryService {
                 try {
                     return convertToDTO(story);
                 } catch (Exception e) {
-                    log.error("Error converting story {}: {}", story.getId(), e.getMessage(), e);
+                    log.error("Error converting story {}: {}", story.getId(), e.getMessage());
                     return null;
                 }
-            }).filter(dto -> dto != null);
+            });
         } catch (Exception e) {
             log.error("Error fetching stories: {}", e.getMessage(), e);
             return Page.empty(pageable);
