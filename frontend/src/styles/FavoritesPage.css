@@ -1,0 +1,264 @@
+.favorites-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.favorites-page .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 3px solid #5b7cfa;
+}
+
+.favorites-page h1 {
+  margin: 0;
+  color: #333;
+  font-size: 2rem;
+}
+
+.back-link {
+  color: #5b7cfa;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+}
+
+.back-link:hover {
+  color: white;
+  background: #5b7cfa;
+}
+
+.message {
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.empty-state p {
+  font-size: 1.5rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.btn-explore {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background: #5b7cfa;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-explore:hover {
+  background: #4a63d2;
+  box-shadow: 0 4px 12px rgba(91, 124, 250, 0.3);
+}
+
+.favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 2rem;
+}
+
+.favorite-card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.favorite-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-image {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.favorite-card:hover .card-image img {
+  transform: scale(1.05);
+}
+
+.card-content {
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-content h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.card-content h3 a {
+  color: #333;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.card-content h3 a:hover {
+  color: #5b7cfa;
+}
+
+.alt-title {
+  color: #999;
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem 0;
+  font-style: italic;
+}
+
+.author {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #f0f0f0;
+  color: #666;
+  font-size: 0.8rem;
+  border-radius: 3px;
+}
+
+.stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.btn-read,
+.btn-remove {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.btn-read {
+  background: #5b7cfa;
+  color: white;
+}
+
+.btn-read:hover {
+  background: #4a63d2;
+  box-shadow: 0 2px 8px rgba(91, 124, 250, 0.3);
+}
+
+.btn-remove {
+  background: #f0f0f0;
+  color: #d63031;
+}
+
+.btn-remove:hover {
+  background: #d63031;
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .favorites-page {
+    padding: 1rem;
+  }
+
+  .favorites-page .header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .favorites-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .card-image {
+    height: 200px;
+  }
+
+  .card-content {
+    padding: 1rem;
+  }
+
+  .stats {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .btn-read,
+  .btn-remove {
+    width: 100%;
+  }
+}
