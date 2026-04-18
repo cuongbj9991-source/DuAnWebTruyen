@@ -3,6 +3,7 @@ package com.doctruyen.controller;
 import com.doctruyen.dto.StoryDTO;
 import com.doctruyen.service.StoryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/stories")
 @RequiredArgsConstructor
+@Slf4j
 @CrossOrigin(origins = "http://localhost:3000")
 public class StoryController {
     private final StoryService storyService;
@@ -118,8 +120,23 @@ public class StoryController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<StoryDTO> getStoryById(@PathVariable Long id) {
-        storyService.incrementViewCount(id);
-        return ResponseEntity.ok(storyService.getStoryById(id));
+    public ResponseEntity<?> getStoryById(@PathVariable Long id) {
+        try {
+            storyService.incrementViewCount(id);
+            StoryDTO story = storyService.getStoryById(id);
+            return ResponseEntity.ok(story);
+        } catch (RuntimeException e) {
+            log.error("Error fetching story {}: {}", id, e.getMessage());
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", 404);
+            return ResponseEntity.status(404).body(error);
+        } catch (Exception e) {
+            log.error("Unexpected error fetching story {}: {}", id, e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error fetching story: " + e.getMessage());
+            error.put("status", 500);
+            return ResponseEntity.status(500).body(error);
+        }
     }
 }
