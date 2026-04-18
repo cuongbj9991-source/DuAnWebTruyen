@@ -161,11 +161,29 @@ function ChapterReader() {
           <span>📅 {new Date(chapter.createdAt).toLocaleDateString('vi-VN')}</span>
         </div>
         
-        <div className="chapter-text">
-          {chapter.content?.split('\n\n').map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
-        </div>
+        {/* Display chapter images if available */}
+        {chapter.pages && Array.isArray(JSON.parse(chapter.pages || '[]')) && JSON.parse(chapter.pages || '[]').length > 0 ? (
+          <div className="chapter-images">
+            {JSON.parse(chapter.pages).map((imageUrl, index) => (
+              <img 
+                key={index}
+                src={imageUrl} 
+                alt={`Page ${index + 1}`}
+                className="chapter-page"
+                onError={(e) => {
+                  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="600"%3E%3Crect fill="%23f0f0f0" width="400" height="600"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="16" fill="%23999" text-anchor="middle" dy=".3em"%3EUnable to load image%3C/text%3E%3C/svg%3E';
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          /* Display text content as fallback */
+          <div className="chapter-text">
+            {chapter.content?.split('\n\n').map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

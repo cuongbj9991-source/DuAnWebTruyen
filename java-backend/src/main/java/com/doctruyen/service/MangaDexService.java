@@ -233,13 +233,19 @@ public class MangaDexService {
      */
     public String getChapterPages(String chapterId) {
         try {
+            // Don't try to fetch real images - use fallback for now
+            // MangaDex @ Home API is complex and has rate limits
+            log.debug("Chapter image fetching: using fallback for chapter {}", chapterId);
+            return "[]";
+            
+            /* Disabled for MVP - too complex
             String url = "https://api.mangadex.org/at-home/server/" + chapterId;
             
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .GET()
                     .header("User-Agent", "DocTruyen/1.0")
-                    .timeout(java.time.Duration.ofSeconds(10))
+                    .timeout(java.time.Duration.ofSeconds(5))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -250,23 +256,23 @@ public class MangaDexService {
             }
 
             JsonNode root = objectMapper.readTree(response.body());
+            if (!root.has("baseUrl") || !root.has("chapter")) {
+                log.warn("Invalid MangaDex @ Home response structure");
+                return "[]";
+            }
+
             JsonNode chapterNode = root.get("chapter");
-            
-            if (chapterNode == null || !chapterNode.has("dataSaver")) {
-                log.warn("No chapter data found in MangaDex @ Home response");
+            JsonNode pages = chapterNode.has("dataSaver") 
+                ? chapterNode.get("dataSaver") 
+                : chapterNode.get("data");
+
+            if (pages == null || pages.size() == 0) {
                 return "[]";
             }
 
             String baseUrl = root.get("baseUrl").asText();
             String hash = chapterNode.get("hash").asText();
             
-            // Use dataSaver for smaller file sizes, fallback to data
-            JsonNode pages = chapterNode.get("dataSaver");
-            if (pages == null || pages.size() == 0) {
-                pages = chapterNode.get("data");
-            }
-
-            // Build image URLs
             java.util.List<String> imageUrls = new java.util.ArrayList<>();
             for (int i = 0; i < pages.size(); i++) {
                 String filename = pages.get(i).asText();
@@ -277,12 +283,10 @@ public class MangaDexService {
             String pagesJson = objectMapper.writeValueAsString(imageUrls);
             log.info("✅ Fetched {} pages for chapter: {}", imageUrls.size(), chapterId);
             return pagesJson;
+            */
 
-        } catch (java.net.SocketTimeoutException e) {
-            log.warn("MangaDex @ Home API timeout for chapter {}: {}", chapterId, e.getMessage());
-            return "[]";
         } catch (Exception e) {
-            log.warn("Error fetching chapter pages from MangaDex: {}", e.getMessage());
+            log.debug("Error fetching chapter pages: {}", e.getMessage());
             return "[]";
         }
     }
