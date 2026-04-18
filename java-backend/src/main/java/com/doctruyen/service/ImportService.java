@@ -2,7 +2,9 @@ package com.doctruyen.service;
 
 import com.doctruyen.dto.StoryDTO;
 import com.doctruyen.entity.Story;
+import com.doctruyen.entity.Chapter;
 import com.doctruyen.repository.StoryRepository;
+import com.doctruyen.repository.ChapterRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -20,6 +22,7 @@ public class ImportService {
     private final GutenbergService gutenbergService;
     private final MangaDexService mangaDexService;
     private final StoryRepository storyRepository;
+    private final ChapterRepository chapterRepository;
 
     /**
      * Import stories from Project Gutenberg
@@ -130,6 +133,10 @@ public class ImportService {
                         story.setUpdatedAt(LocalDateTime.now());
                         
                         storyRepository.save(story);
+                        
+                        // Create sample chapters for MangaDex stories
+                        createSampleChapters(story);
+                        
                         imported++;
                         log.info("✅ Imported MangaDex story: {} ({})", story.getTitle(), imported);
                     }
@@ -144,6 +151,29 @@ public class ImportService {
             log.info("✅ MangaDex import completed: {} stories imported", imported);
         } catch (Exception e) {
             log.error("❌ MangaDex import failed: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Create sample chapters for imported stories
+     */
+    private void createSampleChapters(Story story) {
+        try {
+            for (int i = 1; i <= 5; i++) {
+                Chapter chapter = new Chapter();
+                chapter.setStoryId(story.getId());
+                chapter.setChapterNumber(i);
+                chapter.setTitle("Chương " + i);
+                chapter.setContent("Nội dung chương " + i + " - Chương này sẽ được cập nhật từ " + story.getSource());
+                chapter.setWordCount(500);
+                chapter.setCreatedAt(LocalDateTime.now());
+                chapter.setUpdatedAt(LocalDateTime.now());
+                
+                chapterRepository.save(chapter);
+            }
+            log.info("✅ Created 5 sample chapters for story: {}", story.getTitle());
+        } catch (Exception e) {
+            log.warn("Error creating sample chapters: {}", e.getMessage());
         }
     }
 
