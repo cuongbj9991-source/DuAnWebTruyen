@@ -232,11 +232,16 @@ public class ImportService {
      * Get import statistics
      */
     public ImportStats getImportStats() {
-        long gutenbergCount = storyRepository.countBySource("Gutenberg");
-        long mangaDexCount = storyRepository.countBySource("MangaDex");
-        long openLibraryCount = storyRepository.countBySource("OpenLibrary");
-        
-        return new ImportStats(gutenbergCount, mangaDexCount, openLibraryCount);
+        try {
+            long gutenbergCount = storyRepository.countBySource("Gutenberg");
+            long mangaDexCount = storyRepository.countBySource("MangaDex");
+            long openLibraryCount = storyRepository.countBySource("OpenLibrary");
+            
+            return new ImportStats(gutenbergCount, mangaDexCount, openLibraryCount);
+        } catch (Exception e) {
+            log.error("Error getting import stats: {}", e.getMessage());
+            return new ImportStats(0, 0, 0);
+        }
     }
 
     /**
@@ -244,8 +249,12 @@ public class ImportService {
      */
     @Transactional
     public void clearImportedStories(String source) {
-        int deleted = storyRepository.deleteBySource(source);
-        log.info("✅ Deleted {} stories from {}", deleted, source);
+        try {
+            int deleted = storyRepository.deleteBySource(source);
+            log.info("✅ Deleted {} stories from {}", deleted, source);
+        } catch (Exception e) {
+            log.error("Error deleting stories from {}: {}", source, e.getMessage());
+        }
     }
 
     /**
