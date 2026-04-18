@@ -38,7 +38,8 @@ function StoryDetail() {
             const favResponse = await favoriteService.checkFavorite(id);
             setIsFavorited(favResponse.data.isFavorite);
           } catch (err) {
-            console.error('Error checking favorite:', err);
+            // .NET User Service not available - skip favorite check
+            console.debug('Favorite service unavailable');
           }
         }
       } catch (error) {

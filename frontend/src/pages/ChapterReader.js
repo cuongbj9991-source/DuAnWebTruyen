@@ -44,7 +44,8 @@ function ChapterReader() {
               lastReadAt: new Date().toISOString()
             });
           } catch (err) {
-            console.error('Error saving reading progress:', err);
+            // .NET User Service not available - skip reading progress
+            console.debug('Reading progress service unavailable');
           }
         }
       } catch (error) {
