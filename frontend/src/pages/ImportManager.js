@@ -20,7 +20,8 @@ function ImportManager() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('http://localhost:8081/api/import/stats');
+      const baseURL = process.env.REACT_APP_STORY_SERVICE || 'http://localhost:8081/api';
+      const response = await fetch(`${baseURL}/import/stats`);
       const data = await response.json();
       setStats(data);
     } catch (error) {
@@ -32,8 +33,9 @@ function ImportManager() {
     e.preventDefault();
     setLoading(true);
     try {
+      const baseURL = process.env.REACT_APP_STORY_SERVICE || 'http://localhost:8081/api';
       const response = await fetch(
-        `http://localhost:8081/api/import/gutenberg?keyword=${gutenbergKeyword}&limit=${gutenbergLimit}`
+        `${baseURL}/import/gutenberg?keyword=${gutenbergKeyword}&limit=${gutenbergLimit}`
       );
       const data = await response.json();
       
@@ -54,8 +56,9 @@ function ImportManager() {
     e.preventDefault();
     setLoading(true);
     try {
+      const baseURL = process.env.REACT_APP_STORY_SERVICE || 'http://localhost:8081/api';
       const response = await fetch(
-        `http://localhost:8081/api/import/mangadex?keyword=${mangaDexKeyword}&limit=${mangaDexLimit}`
+        `${baseURL}/import/mangadex?keyword=${mangaDexKeyword}&limit=${mangaDexLimit}`
       );
       const data = await response.json();
       
@@ -79,8 +82,9 @@ function ImportManager() {
     
     setLoading(true);
     try {
+      const baseURL = process.env.REACT_APP_STORY_SERVICE || 'http://localhost:8081/api';
       const response = await fetch(
-        `http://localhost:8081/api/import/clear?source=${source}`,
+        `${baseURL}/import/clear?source=${source}`,
         { method: 'POST' }
       );
       const data = await response.json();
@@ -167,7 +171,7 @@ function ImportManager() {
                 id="gutenberg-limit"
                 type="number"
                 value={gutenbergLimit}
-                onChange={(e) => setGutenbergLimit(parseInt(e.target.value))}
+                onChange={(e) => setGutenbergLimit(e.target.value ? parseInt(e.target.value) : 50)}
                 min="1"
                 max="500"
                 disabled={loading}
@@ -218,7 +222,7 @@ function ImportManager() {
                 id="mangadex-limit"
                 type="number"
                 value={mangaDexLimit}
-                onChange={(e) => setMangaDexLimit(parseInt(e.target.value))}
+                onChange={(e) => setMangaDexLimit(e.target.value ? parseInt(e.target.value) : 50)}
                 min="1"
                 max="500"
                 disabled={loading}

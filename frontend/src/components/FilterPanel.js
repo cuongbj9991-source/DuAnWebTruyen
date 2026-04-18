@@ -18,7 +18,8 @@ function FilterPanel({ onFilterChange, initialFilters = {} }) {
 
   const fetchFilterOptions = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/stories/filter-options');
+      const baseURL = process.env.REACT_APP_STORY_SERVICE || 'http://localhost:8081/api';
+      const response = await fetch(`${baseURL}/stories/filter-options`);
       const data = await response.json();
       setFilterOptions(data);
     } catch (error) {
@@ -184,7 +185,7 @@ function FilterPanel({ onFilterChange, initialFilters = {} }) {
         </h3>
         {expandedSections.type && (
           <div className="filter-buttons">
-            {filterOptions.story_types.map(type => (
+            {filterOptions?.story_types?.length > 0 ? filterOptions.story_types.map(type => (
               <button
                 key={type}
                 className={getSelectedTypes().includes(type) ? 'active' : ''}
@@ -192,7 +193,9 @@ function FilterPanel({ onFilterChange, initialFilters = {} }) {
               >
                 {type}
               </button>
-            ))}
+            )) : (
+              <p>Không có dữ liệu</p>
+            )}
           </div>
         )}
       </div>
@@ -206,7 +209,7 @@ function FilterPanel({ onFilterChange, initialFilters = {} }) {
         </h3>
         {expandedSections.genres && (
           <div className="filter-buttons">
-            {filterOptions.genres.map(genre => (
+            {filterOptions?.genres?.length > 0 ? filterOptions.genres.map(genre => (
               <button
                 key={genre}
                 className={getSelectedGenres().includes(genre) ? 'active' : ''}
@@ -214,7 +217,9 @@ function FilterPanel({ onFilterChange, initialFilters = {} }) {
               >
                 {genre}
               </button>
-            ))}
+            )) : (
+              <p>Không có dữ liệu</p>
+            )}
           </div>
         )}
       </div>
@@ -257,11 +262,13 @@ function FilterPanel({ onFilterChange, initialFilters = {} }) {
           onChange={handleSortChange}
           className="filter-select"
         >
-          {filterOptions.sort_options.map(option => (
+          {filterOptions?.sort_options?.length > 0 ? filterOptions.sort_options.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
-          ))}
+          )) : (
+            <option>Mặc định</option>
+          )}
         </select>
       </div>
 

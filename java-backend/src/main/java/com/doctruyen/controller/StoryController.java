@@ -101,9 +101,19 @@ public class StoryController {
     public ResponseEntity<Map<String, Object>> getFilterOptions() {
         Map<String, Object> response = new HashMap<>();
         response.put("genres", storyService.getAllGenres());
-        response.put("types", storyService.getAllTypes());
+        response.put("story_types", storyService.getAllTypes());
         response.put("statuses", storyService.getAllStatuses());
         response.put("sources", storyService.getAllSources());
+        
+        // Add sort options
+        Map<String, String>[] sortOptions = new Map[]{
+            Map.of("value", "createdAt", "label", "Mới nhất"),
+            Map.of("value", "viewsTotal", "label", "Lượt xem"),
+            Map.of("value", "rating", "label", "Đánh giá"),
+            Map.of("value", "lastChapterUpdated", "label", "Cập nhật gần đây")
+        };
+        response.put("sort_options", sortOptions);
+        
         return ResponseEntity.ok(response);
     }
 
