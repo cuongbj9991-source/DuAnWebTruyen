@@ -24,11 +24,22 @@ public class StoryService {
 
     public Page<StoryDTO> getAllStories(Pageable pageable) {
         try {
-            return storyRepository.findAll(pageable)
-                    .map(this::convertToDTO);
+            var result = storyRepository.findAll(pageable);
+            if (result == null) {
+                log.warn("StoryRepository.findAll returned null!");
+                return Page.empty(pageable);
+            }
+            return result.map(story -> {
+                try {
+                    return convertToDTO(story);
+                } catch (Exception e) {
+                    log.error("Error converting story {}: {}", story.getId(), e.getMessage(), e);
+                    return null;
+                }
+            }).filter(dto -> dto != null);
         } catch (Exception e) {
-            log.error("Error fetching stories", e);
-            throw new RuntimeException("Failed to fetch stories: " + e.getMessage(), e);
+            log.error("Error fetching stories: {}", e.getMessage(), e);
+            return Page.empty(pageable);
         }
     }
 
