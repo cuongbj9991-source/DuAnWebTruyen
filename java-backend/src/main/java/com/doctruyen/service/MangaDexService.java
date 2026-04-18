@@ -153,6 +153,80 @@ public class MangaDexService {
         }
     }
 
+    public List<MangaDexChapter> getChaptersForManga(String mangaId, int limit) {
+        try {
+            String url = MANGADEX_API + "/manga/" + mangaId + "/feed"
+                    + "?limit=" + Math.min(limit, 50)
+                    + "&order[chapter]=asc"
+                    + "&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic";
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .header("User-Agent", "DocTruyen/1.0")
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() != 200) {
+                log.warn("MangaDex chapters API returned: {}", response.statusCode());
+                return new ArrayList<>();
+            }
+
+            JsonNode root = objectMapper.readTree(response.body());
+            List<MangaDexChapter> chapters = new ArrayList<>();
+
+            if (root.has("data")) {
+                root.get("data").forEach(ch -> {
+                    try {
+                        if (ch.has("attributes") && ch.has("id")) {
+                            JsonNode attr = ch.get("attributes");
+                            String chapterNum = attr.has("chapter") ? attr.get("chapter").asText() : "0";
+                            String title = attr.has("title") ? attr.get("title").asText() : "Chapter " + chapterNum;
+                            
+                            MangaDexChapter chapter = new MangaDexChapter();
+                            chapter.setId(ch.get("id").asText());
+                            chapter.setChapterNumber(chapterNum);
+                            chapter.setTitle(title);
+                            chapters.add(chapter);
+                        }
+                    } catch (Exception e) {
+                        log.debug("Error parsing chapter: {}", e.getMessage());
+                    }
+                });
+            }
+
+            log.info("Fetched {} chapters for manga: {}", chapters.size(), mangaId);
+            return chapters;
+        } catch (Exception e) {
+            log.error("Error fetching chapters from MangaDex: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    public String getChapterContent(String chapterId) {
+        try {
+            String url = MANGADEX_API + "/at/home/api/manga/" + chapterId + "/aggregate?translatedLanguage[]=en";
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .header("User-Agent", "DocTruyen/1.0")
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() == 200) {
+                return "Nội dung từ MangaDex Chapter " + chapterId + " - " + response.body().substring(0, Math.min(500, response.body().length()));
+            }
+            
+            return "Không thể tải nội dung từ MangaDex";
+        } catch (Exception e) {
+            log.warn("Error fetching chapter content: {}", e.getMessage());
+            return "Lỗi tải nội dung: " + e.getMessage();
+        }
+    }
+
     public static class MangaDexManga {
         private String id;
         private String title;
@@ -190,5 +264,20 @@ public class MangaDexService {
 
         public String getStatus() { return status; }
         public void setStatus(String status) { this.status = status; }
+    }
+
+    public static class MangaDexChapter {
+        private String id;
+        private String chapterNumber;
+        private String title;
+
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+
+        public String getChapterNumber() { return chapterNumber; }
+        public void setChapterNumber(String chapterNumber) { this.chapterNumber = chapterNumber; }
+
+        public String getTitle() { return title; }
+        public void setTitle(String title) { this.title = title; }
     }
 }

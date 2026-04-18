@@ -134,8 +134,8 @@ public class ImportService {
                         
                         storyRepository.save(story);
                         
-                        // Create sample chapters for MangaDex stories
-                        createSampleChapters(story);
+                        // Fetch real chapters from MangaDex
+                        fetchMangaDexChapters(story, manga.getId());
                         
                         imported++;
                         log.info("✅ Imported MangaDex story: {} ({})", story.getTitle(), imported);
@@ -155,17 +155,68 @@ public class ImportService {
     }
 
     /**
-     * Create sample chapters for imported stories
+     * Fetch and import chapters from MangaDex for a story
+     */
+    private void fetchMangaDexChapters(Story story, String mangaId) {
+        try {
+            var chapters = mangaDexService.getChaptersForManga(mangaId, 10);
+            
+            int chapterNumber = 1;
+            for (var ch : chapters) {
+                try {
+                    Chapter chapter = new Chapter();
+                    chapter.setStoryId(story.getId());
+                    chapter.setChapterNumber(chapterNumber);
+                    chapter.setTitle(ch.getTitle() != null && !ch.getTitle().isEmpty() ? 
+                                    ch.getTitle() : ("Chương " + ch.getChapterNumber()));
+                    
+                    // Fetch actual chapter content
+                    String content = mangaDexService.getChapterContent(ch.getId());
+                    chapter.setContent(content);
+                    chapter.setWordCount(content.length() / 5); // Rough estimate
+                    chapter.setCreatedAt(LocalDateTime.now());
+                    chapter.setUpdatedAt(LocalDateTime.now());
+                    
+                    chapterRepository.save(chapter);
+                    chapterNumber++;
+                } catch (Exception e) {
+                    log.warn("Error fetching chapter {}: {}", ch.getChapterNumber(), e.getMessage());
+                }
+            }
+            
+            if (chapterNumber > 1) {
+                log.info("✅ Imported {} chapters for story: {}", (chapterNumber - 1), story.getTitle());
+            } else {
+                // Fallback to sample chapters if no real chapters found
+                createSampleChapters(story);
+            }
+        } catch (Exception e) {
+            log.warn("Error fetching MangaDex chapters: {}", e.getMessage());
+            // Fallback to sample chapters
+            createSampleChapters(story);
+        }
+    }
+
+    /**
+     * Create sample chapters as fallback
      */
     private void createSampleChapters(Story story) {
         try {
+            String[] sampleContent = {
+                "Chương bắt đầu với một cảnh mở bộ lộc toàn bộ bối cảnh của câu chuyện. Nhân vật chính được giới thiệu và độc giả bắt đầu tìm hiểu về tính cách, động lực và mục tiêu của họ.",
+                "Xung đột chính bắt đầu xuất hiện khi nhân vật chính gặp phải một thách thức quan trọng. Điều này tạo ra sự căng thẳng và lôi cuốn độc giả vào câu chuyện.",
+                "Nhân vật chính phải đối mặt với một quyết định khó khăn mà sẽ thay đổi quỹ đạo của cuộc hành trình. Những tình tiết xoắn được đưa vào để tạo ra sự bất ngờ.",
+                "Xung đột leo thang và nhân vật chính tìm ra những điều mới về bản thân và thế giới xung quanh. Mối quan hệ với các nhân vật khác phát triển và trở nên phức tạp hơn.",
+                "Chương kết thúc với một hé lộ quan trọng hoặc một bước ngoặt lớn khiến độc giả mong muốn đọc tiếp. Đây là điểm cao trào hoặc điểm quay chuyển quan trọng trong câu chuyện."
+            };
+            
             for (int i = 1; i <= 5; i++) {
                 Chapter chapter = new Chapter();
                 chapter.setStoryId(story.getId());
                 chapter.setChapterNumber(i);
                 chapter.setTitle("Chương " + i);
-                chapter.setContent("Nội dung chương " + i + " - Chương này sẽ được cập nhật từ " + story.getSource());
-                chapter.setWordCount(500);
+                chapter.setContent(sampleContent[i - 1] + "\n\n[Nội dung chương này là placeholder từ " + story.getSource() + "]");
+                chapter.setWordCount(200);
                 chapter.setCreatedAt(LocalDateTime.now());
                 chapter.setUpdatedAt(LocalDateTime.now());
                 
