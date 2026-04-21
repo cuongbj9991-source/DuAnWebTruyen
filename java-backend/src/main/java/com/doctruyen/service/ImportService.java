@@ -19,6 +19,7 @@ import java.util.List;
 public class ImportService {
     
     private final GutenbergService gutenbergService;
+    private final ProjectGutenbergService projectGutenbergService;
     private final MangaDexService mangaDexService;
     private final ArchiveOrgService archiveOrgService;
     private final OpenLibraryService openLibraryService;
@@ -525,6 +526,123 @@ public class ImportService {
             log.info("✅ Deleted {} stories from {}", deleted, source);
         } catch (Exception e) {
             log.error("Error deleting stories from {}: {}", source, e.getMessage());
+        }
+    }
+
+    /**
+     * Import books from Project Gutenberg with full text content
+     */
+    @Async
+    public void importFromProjectGutenberg(String keyword, int limit) {
+        try {
+            log.info("Starting Project Gutenberg import for keyword: {}", keyword);
+            
+            var books = projectGutenbergService.searchBooks(keyword, limit);
+            int imported = 0;
+            
+            if (books.isEmpty()) {
+                log.warn("⚠️ No books found on Project Gutenberg for: {}", keyword);
+                return;
+            }
+            
+            for (var book : books) {
+                if (imported >= limit) break;
+                
+                // Check if story already exists
+                String externalId = "projectgutenberg_" + book.id;
+                if (storyRepository.existsByExternalId(externalId)) {
+                    log.debug("Book already imported: {}", book.title);
+                    continue;
+                }
+                
+                // Create new story
+                Story story = new Story();
+                story.setTitle(book.title);
+                story.setAuthor(book.author != null ? book.author : "Unknown");
+                story.setDescription(book.description != null ? book.description : "");
+                story.setCoverUrl(book.coverUrl);
+                story.setGenre("Sách điện tử");
+                story.setType("dịch");
+                story.setStatus("completed");
+                story.setSource("Project Gutenberg");
+                story.setExternalId(externalId);
+                story.setIsPublic(true);
+                story.setViewsTotal(0L);
+                story.setLikes(0);
+                story.setRating(0.0);
+                story.setRatingCount(0);
+                story.setCreatedAt(LocalDateTime.now());
+                story.setUpdatedAt(LocalDateTime.now());
+                
+                storyRepository.save(story);
+                
+                // Download and create chapters with full text content
+                log.info("Downloading content from Project Gutenberg for: {}", story.getTitle());
+                String fullContent = projectGutenbergService.downloadBookContent(book.id);
+                
+                if (fullContent != null && !fullContent.trim().isEmpty()) {
+                    createProjectGutenbergChapters(story, fullContent);
+                    imported++;
+                    log.info("✅ Imported Project Gutenberg book: {} by {} with full content", 
+                             story.getTitle(), story.getAuthor());
+                } else {
+                    log.warn("⚠️ Could not download content for: {}", story.getTitle());
+                    createSampleChapters(story);
+                    imported++;
+                }
+            }
+            
+            log.info("✅ Project Gutenberg import completed: {} books imported", imported);
+        } catch (Exception e) {
+            log.error("❌ Project Gutenberg import failed: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create chapters from Project Gutenberg full text content
+     * Splits content into chapters approximately 5000 words each
+     */
+    private void createProjectGutenbergChapters(Story story, String fullContent) {
+        try {
+            // Split content into approximate chapters (5000 words each)
+            final int WORDS_PER_CHAPTER = 5000;
+            String[] words = fullContent.split("\\s+");
+            
+            int chapterNum = 1;
+            int wordIndex = 0;
+            
+            while (wordIndex < words.length && chapterNum <= 50) { // Limit to 50 chapters max
+                StringBuilder chapterContent = new StringBuilder();
+                int wordsInChapter = 0;
+                
+                // Build chapter content
+                while (wordIndex < words.length && wordsInChapter < WORDS_PER_CHAPTER) {
+                    chapterContent.append(words[wordIndex]).append(" ");
+                    wordIndex++;
+                    wordsInChapter++;
+                }
+                
+                // Create chapter
+                if (chapterContent.length() > 0) {
+                    Chapter chapter = new Chapter();
+                    chapter.setStoryId(story.getId());
+                    chapter.setChapterNumber(chapterNum);
+                    chapter.setTitle("Chương " + chapterNum);
+                    chapter.setContent(chapterContent.toString().trim());
+                    chapter.setWordCount(wordsInChapter);
+                    chapter.setCreatedAt(LocalDateTime.now());
+                    chapter.setUpdatedAt(LocalDateTime.now());
+                    
+                    chapterRepository.save(chapter);
+                    chapterNum++;
+                }
+            }
+            
+            log.info("✅ Created {} chapters from Project Gutenberg content for story: {}", 
+                     chapterNum - 1, story.getTitle());
+        } catch (Exception e) {
+            log.warn("Error creating chapters from Project Gutenberg content: {}", e.getMessage());
+            createSampleChapters(story);
         }
     }
 

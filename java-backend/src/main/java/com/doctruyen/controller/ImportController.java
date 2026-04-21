@@ -116,6 +116,30 @@ public class ImportController {
     }
 
     /**
+     * Import books from Project Gutenberg with full text content
+     * GET /api/import/project-gutenberg?keyword=adventure&limit=10
+     */
+    @GetMapping("/project-gutenberg")
+    public ResponseEntity<Map<String, Object>> importFromProjectGutenberg(
+            @RequestParam(defaultValue = "adventure") String keyword,
+            @RequestParam(defaultValue = "10") int limit) {
+        
+        log.info("Received import request from Project Gutenberg: keyword={}, limit={}", keyword, limit);
+        
+        // Run async import
+        importService.importFromProjectGutenberg(keyword, limit);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Project Gutenberg import started");
+        response.put("keyword", keyword);
+        response.put("limit", limit);
+        response.put("status", "importing");
+        response.put("note", "Project Gutenberg is a collection of 70,000+ free public domain books with full text content");
+        
+        return ResponseEntity.accepted().body(response);
+    }
+
+    /**
      * Get import statistics
      * GET /api/import/stats
      */

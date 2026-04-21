@@ -16,7 +16,9 @@ import java.util.List;
 @Service
 public class ProjectGutenbergService {
 
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.ALWAYS)
+            .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public static class BookMetadata {
@@ -64,20 +66,31 @@ public class ProjectGutenbergService {
                 for (JsonNode book : results) {
                     if (count >= limit) break;
                     
-                    String bookId = book.get("id").asText();
-                    String title = book.get("title").asText();
-                    JsonNode authorsNode = book.get("authors");
-                    String author = "";
-                    
-                    if (authorsNode != null && authorsNode.isArray() && authorsNode.size() > 0) {
-                        author = authorsNode.get(0).get("name").asText();
+                    try {
+                        String bookId = book.get("id").asText();
+                        String title = book.get("title").asText("");
+                        JsonNode authorsNode = book.get("authors");
+                        String author = "";
+                        
+                        if (authorsNode != null && authorsNode.isArray() && authorsNode.size() > 0) {
+                            author = authorsNode.get(0).get("name").asText("");
+                        }
+                        
+                        // Handle cover_image - may be null
+                        String coverUrl = "";
+                        if (book.has("cover_image") && !book.get("cover_image").isNull()) {
+                            coverUrl = book.get("cover_image").asText("");
+                        }
+                        
+                        if (!title.isEmpty()) {
+                            String description = (author.isEmpty() ? title : title + " by " + author) + " - Project Gutenberg";
+                            books.add(new BookMetadata(bookId, title, author, description, coverUrl));
+                            count++;
+                        }
+                    } catch (Exception e) {
+                        log.debug("Error parsing book entry: {}", e.getMessage());
+                        continue;
                     }
-                    
-                    String coverUrl = book.get("cover_image").asText("");
-                    String description = title + " - Project Gutenberg";
-                    
-                    books.add(new BookMetadata(bookId, title, author, description, coverUrl));
-                    count++;
                 }
             }
             
