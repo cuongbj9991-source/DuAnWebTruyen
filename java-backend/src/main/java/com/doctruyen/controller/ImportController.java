@@ -92,6 +92,30 @@ public class ImportController {
     }
 
     /**
+     * Import books from OpenLibrary
+     * GET /api/import/openlibrary?keyword=fiction&limit=50
+     */
+    @GetMapping("/openlibrary")
+    public ResponseEntity<Map<String, Object>> importFromOpenLibrary(
+            @RequestParam(defaultValue = "fiction") String keyword,
+            @RequestParam(defaultValue = "50") int limit) {
+        
+        log.info("Received import request from OpenLibrary: keyword={}, limit={}", keyword, limit);
+        
+        // Run async import
+        importService.importFromOpenLibrary(keyword, limit);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "OpenLibrary import started");
+        response.put("keyword", keyword);
+        response.put("limit", limit);
+        response.put("status", "importing");
+        response.put("note", "OpenLibrary is a free and open catalog of books on the web");
+        
+        return ResponseEntity.accepted().body(response);
+    }
+
+    /**
      * Get import statistics
      * GET /api/import/stats
      */

@@ -21,6 +21,7 @@ public class ImportService {
     private final GutenbergService gutenbergService;
     private final MangaDexService mangaDexService;
     private final ArchiveOrgService archiveOrgService;
+    private final OpenLibraryService openLibraryService;
     private final StoryRepository storyRepository;
     private final ChapterRepository chapterRepository;
 
@@ -253,6 +254,112 @@ public class ImportService {
             log.info("✅ Archive.org import completed: {} books imported", imported);
         } catch (Exception e) {
             log.error("❌ Archive.org import failed: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Import books from OpenLibrary
+     */
+    @Async
+    public void importFromOpenLibrary(String keyword, int limit) {
+        try {
+            log.info("Starting OpenLibrary import for keyword: {}", keyword);
+            
+            int page = 1;
+            int imported = 0;
+            
+            while (imported < limit) {
+                try {
+                    var books = openLibraryService.searchBooks(keyword, page);
+                    if (books.isEmpty()) {
+                        if (page == 1 && imported == 0) {
+                            log.warn("⚠️ No books found on OpenLibrary for: {}", keyword);
+                        }
+                        break;
+                    }
+                    
+                    for (var book : books) {
+                        if (imported >= limit) break;
+                        
+                        // Check if story already exists
+                        String externalId = "openlibrary_" + book.getId();
+                        if (storyRepository.existsByExternalId(externalId)) {
+                            log.debug("Book already imported: {}", book.getTitle());
+                            continue;
+                        }
+                        
+                        // Create new story
+                        Story story = new Story();
+                        story.setTitle(book.getTitle());
+                        story.setAuthor(book.getAuthor() != null ? book.getAuthor() : "Unknown");
+                        story.setDescription(book.getDescription() != null ? book.getDescription() : "");
+                        story.setCoverUrl(book.getCoverUrl());
+                        story.setGenre("Sách điện tử");
+                        story.setType("dịch");
+                        story.setStatus("completed");
+                        story.setSource("OpenLibrary");
+                        story.setExternalId(externalId);
+                        story.setIsPublic(true);
+                        story.setViewsTotal(0L);
+                        story.setLikes(0);
+                        story.setRating(0.0);
+                        story.setRatingCount(0);
+                        story.setCreatedAt(LocalDateTime.now());
+                        story.setUpdatedAt(LocalDateTime.now());
+                        
+                        storyRepository.save(story);
+                        
+                        // Create chapters with book metadata
+                        createOpenLibraryChapters(story, book);
+                        
+                        imported++;
+                        log.info("✅ Imported OpenLibrary book: {} by {}", 
+                                 story.getTitle(), story.getAuthor());
+                    }
+                    
+                    page++;
+                } catch (Exception e) {
+                    log.error("Error importing from OpenLibrary page {}: {}", page, e.getMessage());
+                    break;
+                }
+            }
+            
+            log.info("✅ OpenLibrary import completed: {} books imported", imported);
+        } catch (Exception e) {
+            log.error("❌ OpenLibrary import failed: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Create chapters for OpenLibrary books
+     */
+    private void createOpenLibraryChapters(Story story, OpenLibraryService.OpenLibraryBook book) {
+        try {
+            String bookLink = "\n\n📖 Link: https://openlibrary.org/works/" + book.getId() + "\n";
+            String[] sampleChapters = {
+                "Chương 1: Giới thiệu\n" + book.getTitle() + " - Tác giả: " + book.getAuthor() + "\n" + book.getDescription() + bookLink,
+                "Chương 2: Bối cảnh\nCuốn sách này được tìm thấy trên OpenLibrary - một dự án mở cung cấp thông tin về sách." + bookLink,
+                "Chương 3: Nội dung chính\nĐể đọc nội dung đầy đủ, vui lòng truy cập OpenLibrary tại đường link trên." + bookLink,
+                "Chương 4: Phân tích\nBạn có thể tìm thêm thông tin về sách này trên OpenLibrary." + bookLink,
+                "Chương 5: Kết luận\nCảm ơn bạn đã đọc tóm tắt này. Vui lòng ghé thăm OpenLibrary để đọc toàn bộ nội dung!" + bookLink
+            };
+            
+            for (int i = 1; i <= 5; i++) {
+                Chapter chapter = new Chapter();
+                chapter.setStoryId(story.getId());
+                chapter.setChapterNumber(i);
+                chapter.setTitle("Chương " + i);
+                chapter.setContent(sampleChapters[i - 1]);
+                chapter.setWordCount(150);
+                chapter.setCreatedAt(LocalDateTime.now());
+                chapter.setUpdatedAt(LocalDateTime.now());
+                
+                chapterRepository.save(chapter);
+            }
+            log.info("✅ Created chapters for OpenLibrary book: {}", story.getTitle());
+        } catch (Exception e) {
+            log.warn("Error creating chapters for OpenLibrary book: {}", e.getMessage());
+            createSampleChapters(story);
         }
     }
 
