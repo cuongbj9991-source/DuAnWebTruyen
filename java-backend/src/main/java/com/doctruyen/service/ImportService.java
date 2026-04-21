@@ -102,12 +102,7 @@ public class ImportService {
                 try {
                     var mangas = mangaDexService.searchManga(keyword, page);
                     if (mangas.isEmpty()) {
-                        // If first page is empty, might be network issue - create sample fallback
-                        if (page == 1 && imported == 0) {
-                            log.warn("⚠️ MangaDex API returned no results, creating sample manga instead");
-                            createSampleMangaStories(keyword, limit);
-                            imported = limit;
-                        }
+                        log.info("No more manga found on page {}", page);
                         break;
                     }
                     
@@ -142,22 +137,28 @@ public class ImportService {
                         
                         storyRepository.save(story);
                         
-                        // Use sample chapters as fallback (skip MangaDex API due to network block)
-                        createSampleChapters(story);
+                        // Fetch real chapters from MangaDex
+                        var chapters = mangaDexService.getChaptersForManga(manga.getId(), 30);
+                        int chapterNum = 1;
+                        for (var chapter : chapters) {
+                            Chapter ch = new Chapter();
+                            ch.setStoryId(story.getId());
+                            ch.setChapterNumber(chapterNum);
+                            ch.setTitle(chapter.getTitle() != null ? chapter.getTitle() : "Chapter " + chapterNum);
+                            ch.setContent("[MangaDex Chapter: " + chapter.getChapterNumber() + "]");
+                            ch.setPages("[]"); // TODO: Fetch actual pages from MangaDex
+                            ch.setCreatedAt(LocalDateTime.now());
+                            chapterRepository.save(ch);
+                            chapterNum++;
+                        }
                         
                         imported++;
-                        log.info("✅ Imported MangaDex story: {} ({})", story.getTitle(), imported);
+                        log.info("✅ Imported MangaDex story: {} with {} chapters", story.getTitle(), chapters.size());
                     }
                     
                     page++;
                 } catch (Exception e) {
                     log.error("Error importing from MangaDex page {}: {}", page, e.getMessage());
-                    // Fallback: create sample manga stories if API fails
-                    if (imported == 0) {
-                        log.warn("⚠️ MangaDex API error, creating sample manga instead");
-                        createSampleMangaStories(keyword, limit);
-                        imported = limit;
-                    }
                     break;
                 }
             }
