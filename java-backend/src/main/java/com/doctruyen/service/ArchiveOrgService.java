@@ -352,7 +352,11 @@ public class ArchiveOrgService {
             HttpRequest contentRequest = HttpRequest.newBuilder()
                     .uri(URI.create(downloadUrl))
                     .GET()
-                    .header("User-Agent", "DocTruyen/1.0")
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    .header("Accept", "text/plain, */*")
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Accept-Encoding", "gzip, deflate")
+                    .header("Referer", "https://archive.org/")
                     .timeout(java.time.Duration.ofSeconds(60))  // Longer timeout for actual download
                     .build();
 
