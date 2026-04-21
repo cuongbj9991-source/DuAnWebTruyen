@@ -25,7 +25,7 @@ public class Comment {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @Column(columnDefinition = "INTEGER DEFAULT 0")
+    @Column
     private Integer rating = 0; // 1-5 stars
 
     @Column(name = "created_at")

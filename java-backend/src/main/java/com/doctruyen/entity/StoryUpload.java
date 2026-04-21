@@ -43,16 +43,16 @@ public class StoryUpload {
     @Column(columnDefinition = "TEXT")
     private String content; // Story content as text or HTML
 
-    @Column(name = "is_public", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Column(name = "is_public")
     private Boolean isPublic = false;
 
-    @Column(name = "is_approved", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Column(name = "is_approved")
     private Boolean isApproved = false;
 
     @Column(name = "rejection_reason")
     private String rejectionReason;
 
-    @Column(name = "views_count", columnDefinition = "BIGINT DEFAULT 0")
+    @Column(name = "views_count")
     private Long viewsCount = 0L;
 
     @Column(name = "created_at")

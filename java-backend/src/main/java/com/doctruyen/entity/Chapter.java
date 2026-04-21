@@ -31,7 +31,7 @@ public class Chapter {
     @Column(name = "pages", columnDefinition = "TEXT")
     private String pages; // JSON array of image URLs
 
-    @Column(name = "word_count", columnDefinition = "INTEGER DEFAULT 0")
+    @Column(name = "word_count")
     private Integer wordCount = 0;
 
     @Column(name = "created_at")

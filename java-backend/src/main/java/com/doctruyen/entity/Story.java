@@ -46,25 +46,25 @@ public class Story {
     @Column(name = "external_id", length = 255, unique = true)
     private String externalId; // ID from external source (e.g., gutenberg_123)
 
-    @Column(name = "is_public", columnDefinition = "BOOLEAN DEFAULT true")
+    @Column(name = "is_public")
     private Boolean isPublic = true;
 
     @Column(name = "cover_url", length = 500)
     private String coverUrl;
 
-    @Column(name = "views_total", columnDefinition = "INTEGER DEFAULT 0")
+    @Column(name = "views_total")
     private Long viewsTotal = 0L;
 
-    @Column(columnDefinition = "INTEGER DEFAULT 0")
+    @Column
     private Integer likes = 0;
 
-    @Column(name = "comments_count", columnDefinition = "INTEGER DEFAULT 0")
+    @Column(name = "comments_count")
     private Integer commentsCount = 0;
 
-    @Column(columnDefinition = "DECIMAL(3,2) DEFAULT 0")
+    @Column
     private Double rating = 0.0;
 
-    @Column(name = "rating_count", columnDefinition = "INTEGER DEFAULT 0")
+    @Column(name = "rating_count")
     private Integer ratingCount = 0;
 
     @Column(name = "last_chapter_updated")
