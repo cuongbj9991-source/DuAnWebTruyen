@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 // API Gateway or direct service URLs
-const STORY_SERVICE = process.env.REACT_APP_STORY_SERVICE || 'http://localhost:8081/api';
-const USER_SERVICE = process.env.REACT_APP_USER_SERVICE || 'http://localhost:8081/api';
+// Railway production URL as default
+const STORY_SERVICE = process.env.REACT_APP_STORY_SERVICE || 'https://duanwebtruyen-production.up.railway.app/api';
+const USER_SERVICE = process.env.REACT_APP_USER_SERVICE || 'https://duanwebtruyen-production.up.railway.app/api';
 
 const createClient = (baseURL, silent = false) => {
   const client = axios.create({
