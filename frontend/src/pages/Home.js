@@ -45,20 +45,20 @@ function Home() {
       <div className="home">
         <header className="header">
           <div className="header-top">
-            <h1>📚 Web Đọc Truyện</h1>
+            <h1>Web Đọc Truyện</h1>
             <div className="header-actions">
               {user ? (
                 <>
-                  <span className="user-info">👤 {user.username || user.email}</span>
-                  <Link to="/favorites" className="btn-favorites" title="Yêu thích của tôi">❤️ Yêu thích</Link>
-                  <Link to="/import" className="btn-import" title="Nhập truyện từ Gutenberg & MangaDex">📥 Import</Link>
-                  <Link to="/upload" className="btn-upload">📝 Tải Lên</Link>
-                  <button onClick={logout} className="btn-logout">🚪 Đăng xuất</button>
+                  <span className="user-info">{user.username || user.email}</span>
+                  <Link to="/favorites" className="btn-favorites" title="Yêu thích của tôi">Yêu thích</Link>
+                  <Link to="/import" className="btn-import" title="Nhập truyện từ Gutenberg & MangaDex">Import</Link>
+                  <Link to="/upload" className="btn-upload">Tải Lên</Link>
+                  <button onClick={logout} className="btn-logout">Đăng xuất</button>
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="btn-login">🔐 Đăng nhập</Link>
-                  <Link to="/register" className="btn-register">✏️ Đăng ký</Link>
+                  <Link to="/login" className="btn-login">Đăng nhập</Link>
+                  <Link to="/register" className="btn-register">Đăng ký</Link>
                 </>
               )}
             </div>

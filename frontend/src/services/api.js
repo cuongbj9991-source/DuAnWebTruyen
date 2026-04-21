@@ -1,9 +1,13 @@
 import axios from 'axios';
 
 // API Gateway or direct service URLs
-// Railway production URL as default
-const STORY_SERVICE = process.env.REACT_APP_STORY_SERVICE || 'https://duanwebtruyen-production.up.railway.app/api';
-const USER_SERVICE = process.env.REACT_APP_USER_SERVICE || 'https://duanwebtruyen-production.up.railway.app/api';
+// For local development, use localhost
+// For production, use Railway URL
+const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+const baseURL = isDevelopment ? 'http://localhost:8081/api' : 'https://duanwebtruyen-production.up.railway.app/api';
+
+const STORY_SERVICE = process.env.REACT_APP_STORY_SERVICE || baseURL;
+const USER_SERVICE = process.env.REACT_APP_USER_SERVICE || baseURL;
 
 const createClient = (baseURL, silent = false) => {
   const client = axios.create({
@@ -27,6 +31,16 @@ const createClient = (baseURL, silent = false) => {
     client.interceptors.response.use(
       response => response,
       error => {
+        // Log error for debugging
+        console.error('API Error:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          code: error.code,
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
+        
         // Suppress connection refused errors (optional services not deployed)
         if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
           return Promise.reject(error);
@@ -36,6 +50,22 @@ const createClient = (baseURL, silent = false) => {
           console.warn('Optional endpoint not found:', error.config?.url);
           return { data: null };
         }
+        return Promise.reject(error);
+      }
+    );
+  } else {
+    // Add detailed logging for non-silent clients
+    client.interceptors.response.use(
+      response => response,
+      error => {
+        console.error('API Error:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          code: error.code,
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
         return Promise.reject(error);
       }
     );
@@ -76,7 +106,13 @@ export const chapterService = {
     storyClient.get(`/chapters/story/${storyId}/chapter/${chapterNumber}`),
 
   // Lấy chương theo ID
-  getChapterById: (id) => storyClient.get(`/chapters/${id}`)
+  getChapterById: (id) => storyClient.get(`/chapters/${id}`),
+
+  // Dịch nội dung chương sang Tiếng Việt
+  translateChapter: (id) => storyClient.post(`/chapters/${id}/translate`),
+
+  // Dịch đoạn văn bản ngắn
+  translateText: (text) => storyClient.post('/chapters/translate-text', { text })
 };
 
 export const userService = {

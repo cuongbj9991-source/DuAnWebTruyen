@@ -64,16 +64,32 @@ function RegisterForm() {
 
     try {
       setLoading(true);
+      console.log('Submitting registration with:', {
+        username: formData.username,
+        email: formData.email,
+        password: '***'
+      });
+      
       const response = await authService.register(
         formData.username,
         formData.email,
         formData.password
       );
 
+      console.log('Registration success:', response.data);
+
       // Save token and user info
       login(response.data.user, response.data.token);
       navigate('/');
     } catch (err) {
+      console.error('Registration error:', {
+        code: err.code,
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        fullError: err
+      });
+      
       const errorMessage = err.response?.data?.message || err.message || 'Đăng ký thất bại';
       setError(errorMessage);
     } finally {

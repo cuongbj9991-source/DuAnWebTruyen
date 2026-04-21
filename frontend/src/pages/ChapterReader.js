@@ -12,9 +12,13 @@ function ChapterReader() {
   const [story, setStory] = useState(null);
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [fontSize, setFontSize] = useState(16);
   const [lineHeight, setLineHeight] = useState(1.6);
   const [theme, setTheme] = useState('light');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedContent, setTranslatedContent] = useState(null);
+  const [showTranslated, setShowTranslated] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +54,7 @@ function ChapterReader() {
         }
       } catch (error) {
         console.error('Error fetching chapter data:', error);
+        setError(error.response?.data?.message || error.message || 'Lỗi tải chương');
       } finally {
         setLoading(false);
       }
@@ -86,8 +91,29 @@ function ChapterReader() {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  if (loading) return <div className="loading">⏳ Đang tải chương...</div>;
-  if (!chapter) return <div className="error">❌ Không tìm thấy chương</div>;
+  const handleTranslate = async () => {
+    if (translatedContent) {
+      // Nếu đã dịch rồi, chỉ cần toggle hiển thị
+      setShowTranslated(!showTranslated);
+      return;
+    }
+
+    try {
+      setIsTranslating(true);
+      const response = await chapterService.translateChapter(chapter.id);
+      setTranslatedContent(response.data.translatedContent);
+      setShowTranslated(true);
+    } catch (error) {
+      console.error('Lỗi dịch chương:', error);
+      alert('❌ Lỗi dịch chương: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  if (loading) return <div className="loading">Đang tải chương...</div>;
+  if (error) return <div className="error">Lỗi: {error}</div>;
+  if (!chapter) return <div className="error">Không tìm thấy chương</div>;
 
   return (
     <div className={`chapter-reader ${theme}`}>
@@ -123,11 +149,20 @@ function ChapterReader() {
 
         <div className="toolbar-group">
           <button 
-            title="Đổi chế độ"
-            onClick={toggleTheme}
-            className="toolbar-btn theme-btn"
+            onClick={handleTranslate}
+            disabled={isTranslating}
+            className={`toolbar-btn ${translatedContent ? 'active' : ''}`}
           >
-            {theme === 'light' ? '🌙' : '☀️'}
+            {isTranslating ? 'Đang dịch...' : (showTranslated ? 'Gốc' : 'Dịch')}
+          </button>
+        </div>
+
+        <div className="toolbar-group">
+          <button 
+            onClick={toggleTheme}
+            className="toolbar-btn"
+          >
+            {theme === 'light' ? 'Tối' : 'Sáng'}
           </button>
         </div>
 
@@ -157,8 +192,8 @@ function ChapterReader() {
       >
         <h1 className="chapter-title">Chương {chapter.chapterNumber}: {chapter.title}</h1>
         <div className="chapter-meta">
-          <span>📖 {chapter.wordCount || 0} từ</span>
-          <span>📅 {new Date(chapter.createdAt).toLocaleDateString('vi-VN')}</span>
+          <span>{chapter.wordCount || 0} từ</span>
+          <span>{new Date(chapter.createdAt).toLocaleDateString('vi-VN')}</span>
         </div>
         
         {/* Display chapter images if available */}
@@ -179,9 +214,23 @@ function ChapterReader() {
         ) : (
           /* Display text content as fallback */
           <div className="chapter-text">
-            {chapter.content?.split('\n\n').map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))}
+            {showTranslated && translatedContent ? (
+              // Hiển thị bản dịch Tiếng Việt
+              <>
+                <div className="translation-label">[Bản dịch]</div>
+                {translatedContent?.split('\n\n').map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+              </>
+            ) : (
+              // Hiển thị bản gốc Tiếng Anh
+              <>
+                {translatedContent && <div className="translation-label">[Bản gốc]</div>}
+                {chapter.content?.split('\n\n').map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+              </>
+            )}
           </div>
         )}
       </div>
