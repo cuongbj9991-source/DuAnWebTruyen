@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // API Gateway or direct service URLs
 const STORY_SERVICE = process.env.REACT_APP_STORY_SERVICE || 'http://localhost:8081/api';
-const USER_SERVICE = process.env.REACT_APP_USER_SERVICE || 'http://localhost:5001/api';
+const USER_SERVICE = process.env.REACT_APP_USER_SERVICE || 'http://localhost:8081/api';
 
 const createClient = (baseURL, silent = false) => {
   const client = axios.create({
@@ -21,14 +21,19 @@ const createClient = (baseURL, silent = false) => {
     return config;
   });
 
-  // Suppress network errors for optional services in production
+  // Suppress network errors and 404s for optional services in production
   if (silent) {
     client.interceptors.response.use(
       response => response,
       error => {
-        // Suppress only connection refused errors (optional services not deployed)
+        // Suppress connection refused errors (optional services not deployed)
         if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
           return Promise.reject(error);
+        }
+        // Suppress 404 errors for favorites and reading-progress endpoints
+        if (error.response?.status === 404) {
+          console.warn('Optional endpoint not found:', error.config?.url);
+          return { data: null };
         }
         return Promise.reject(error);
       }

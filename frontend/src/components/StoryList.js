@@ -94,7 +94,7 @@ function StoryList({ filters = {} }) {
                 <div className="story-card">
                   <div className="story-image-container">
                     <img 
-                      src={story.coverUrl || 'https://via.placeholder.com/200x300'} 
+                      src={story.coverUrl || 'https://placehold.co/200x300/4F46E5/FFFFFF?text=Story'} 
                       alt={story.title}
                       className="story-cover"
                     />

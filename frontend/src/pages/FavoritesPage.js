@@ -89,7 +89,7 @@ function FavoritesPage() {
               <div key={favorite.id} className="favorite-card">
                 <div className="card-image">
                   <img
-                    src={story.coverUrl || 'https://via.placeholder.com/150x200'}
+                    src={story.coverUrl || 'https://placehold.co/150x200/4F46E5/FFFFFF?text=Story'}
                     alt={story.title}
                   />
                 </div>
