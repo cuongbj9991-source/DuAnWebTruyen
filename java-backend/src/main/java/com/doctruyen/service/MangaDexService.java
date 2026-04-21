@@ -104,7 +104,7 @@ public class MangaDexService {
             log.info("Found {} mangas from MangaDex for keyword: {}", mangas.size(), keyword);
             return mangas;
         } catch (Exception e) {
-            log.error("Error searching MangaDex API: {}", e.getMessage());
+            log.error("Error searching MangaDex API: {}", e.getMessage(), e);
             return new ArrayList<>();
         }
     }
@@ -233,12 +233,6 @@ public class MangaDexService {
      */
     public String getChapterPages(String chapterId) {
         try {
-            // Don't try to fetch real images - use fallback for now
-            // MangaDex @ Home API is complex and has rate limits
-            log.debug("Chapter image fetching: using fallback for chapter {}", chapterId);
-            return "[]";
-            
-            /* Disabled for MVP - too complex
             String url = "https://api.mangadex.org/at-home/server/" + chapterId;
             
             HttpRequest request = HttpRequest.newBuilder()
@@ -283,10 +277,9 @@ public class MangaDexService {
             String pagesJson = objectMapper.writeValueAsString(imageUrls);
             log.info("✅ Fetched {} pages for chapter: {}", imageUrls.size(), chapterId);
             return pagesJson;
-            */
 
         } catch (Exception e) {
-            log.debug("Error fetching chapter pages: {}", e.getMessage());
+            log.warn("Error fetching chapter pages (fallback to text): {}", e.getMessage());
             return "[]";
         }
     }

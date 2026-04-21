@@ -134,8 +134,8 @@ public class ImportService {
                         
                         storyRepository.save(story);
                         
-                        // Use sample chapters as default (MangaDex API is complex)
-                        createSampleChapters(story);
+                        // Fetch real chapters from MangaDex
+                        fetchMangaDexChapters(story, manga.getId());
                         
                         imported++;
                         log.info("✅ Imported MangaDex story: {} ({})", story.getTitle(), imported);
