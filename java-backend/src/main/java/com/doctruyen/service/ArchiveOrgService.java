@@ -31,9 +31,8 @@ public class ArchiveOrgService {
             
             // Query for public domain texts only
             // mediatype:texts = Books/texts
-            // collection:openlibrary = Open Library collection
-            // -collection:covers = Exclude just covers
-            String query = "(" + keyword.replace(" ", "+OR+") + ")+AND+mediatype:texts+AND+collection:openlibrary";
+            // Simplified query - collection filter too restrictive
+            String query = keyword.replace(" ", "+") + "+mediatype:texts";
             
             String url = ARCHIVE_API + "?q=" + query
                     + "&fl=identifier,title,creator,description,date,item_size,downloads"
@@ -265,6 +264,200 @@ public class ArchiveOrgService {
             log.error("Error fetching book details from Archive.org: {}", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Download and parse content from Archive.org
+     * Returns list of chapters extracted from the text file
+     */
+    public List<ChapterContent> downloadAndParseContent(String identifier) {
+        List<ChapterContent> chapters = new ArrayList<>();
+        try {
+            // Try to download the text file
+            String downloadUrl = "https://archive.org/download/" + identifier + "/" + identifier + "_djvu.txt";
+            
+            log.info("Attempting to download content from: {}", downloadUrl);
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(downloadUrl))
+                    .GET()
+                    .header("User-Agent", "DocTruyen/1.0")
+                    .timeout(java.time.Duration.ofSeconds(30))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() != 200) {
+                log.warn("Failed to download content from Archive.org (Status: {}), using default chapters", response.statusCode());
+                // Return default chapters if download fails
+                return createDefaultChapters();
+            }
+
+            String content = response.body();
+            log.info("Downloaded {} bytes from Archive.org", content.length());
+            
+            // Parse chapters from content
+            chapters = parseChapters(content, identifier);
+            
+            if (chapters.isEmpty()) {
+                log.warn("No chapters found, creating default chapters");
+                return createDefaultChapters();
+            }
+            
+            log.info("Successfully parsed {} chapters from {}", chapters.size(), identifier);
+            return chapters;
+        } catch (Exception e) {
+            log.error("Error downloading/parsing content from Archive.org: {}", e.getMessage());
+            return createDefaultChapters();
+        }
+    }
+
+    /**
+     * Parse text content into chapters
+     * Looks for chapter markers or divides by length
+     */
+    private List<ChapterContent> parseChapters(String content, String identifier) {
+        List<ChapterContent> chapters = new ArrayList<>();
+        
+        // Clean content
+        content = content.replaceAll("\\r\\n", "\n").trim();
+        
+        // Try to find chapter markers (Chapter 1, Chapter 2, CHAPTER I, etc.)
+        String[] chapterMarkers = {"Chapter ", "CHAPTER ", "Chapter\\n", "PART ", "Part ", "Section "};
+        String[] lines = content.split("\n");
+        
+        StringBuilder currentChapter = new StringBuilder();
+        String currentChapterTitle = "Chapter 1";
+        int chapterNumber = 1;
+        int lineCount = 0;
+        int charsPerChapter = 5000; // ~5000 chars per chapter
+        
+        for (String line : lines) {
+            line = line.trim();
+            
+            // Check if line is a chapter marker
+            boolean isMarker = false;
+            for (String marker : chapterMarkers) {
+                if (line.toLowerCase().startsWith(marker.toLowerCase()) && line.length() < 100) {
+                    isMarker = true;
+                    
+                    // Save previous chapter if it has content
+                    if (currentChapter.length() > 0) {
+                        ChapterContent chapter = new ChapterContent();
+                        chapter.setChapterNumber(chapterNumber);
+                        chapter.setTitle(currentChapterTitle);
+                        chapter.setContent(currentChapter.toString().trim());
+                        chapters.add(chapter);
+                        
+                        chapterNumber++;
+                        currentChapter = new StringBuilder();
+                    }
+                    
+                    currentChapterTitle = line;
+                    break;
+                }
+            }
+            
+            // Skip empty lines and metadata
+            if (line.isEmpty() || line.startsWith("***") || line.length() < 3) {
+                continue;
+            }
+            
+            // Add line to current chapter
+            if (!isMarker && !line.matches(".*\\d{4}.*")) { // Skip lines with years (metadata)
+                currentChapter.append(line).append("\n");
+                lineCount++;
+                
+                // If chapter is getting too long, split it
+                if (currentChapter.length() > charsPerChapter && !isMarker) {
+                    ChapterContent chapter = new ChapterContent();
+                    chapter.setChapterNumber(chapterNumber);
+                    chapter.setTitle(currentChapterTitle + " (Part " + (chapterNumber) + ")");
+                    chapter.setContent(currentChapter.toString().trim());
+                    chapters.add(chapter);
+                    
+                    chapterNumber++;
+                    currentChapter = new StringBuilder();
+                }
+            }
+        }
+        
+        // Add last chapter if it has content
+        if (currentChapter.length() > 0) {
+            ChapterContent chapter = new ChapterContent();
+            chapter.setChapterNumber(chapterNumber);
+            chapter.setTitle(currentChapterTitle);
+            chapter.setContent(currentChapter.toString().trim());
+            chapters.add(chapter);
+        }
+        
+        // If no chapters found by marker, divide content into sections
+        if (chapters.isEmpty() && content.length() > 0) {
+            return divideIntoSections(content);
+        }
+        
+        return chapters;
+    }
+
+    /**
+     * Divide content into equal sections if no chapter markers found
+     */
+    private List<ChapterContent> divideIntoSections(String content) {
+        List<ChapterContent> chapters = new ArrayList<>();
+        int charsPerChapter = 5000;
+        int totalChapters = Math.max(1, (content.length() / charsPerChapter) + 1);
+        
+        for (int i = 0; i < totalChapters; i++) {
+            int start = i * charsPerChapter;
+            int end = Math.min(start + charsPerChapter, content.length());
+            
+            ChapterContent chapter = new ChapterContent();
+            chapter.setChapterNumber(i + 1);
+            chapter.setTitle("Chapter " + (i + 1));
+            chapter.setContent(content.substring(start, end).trim());
+            
+            if (chapter.getContent().length() > 100) { // Only add if has meaningful content
+                chapters.add(chapter);
+            }
+        }
+        
+        return chapters;
+    }
+
+    /**
+     * Create default placeholder chapters
+     */
+    private List<ChapterContent> createDefaultChapters() {
+        List<ChapterContent> chapters = new ArrayList<>();
+        
+        ChapterContent chapter = new ChapterContent();
+        chapter.setChapterNumber(1);
+        chapter.setTitle("Chapter 1");
+        chapter.setContent("[Nội dung chương này là placeholder từ Archive.org]\n\n" +
+                "Chương này hiển thị nội dung mặc định vì không thể tải được nội dung từ Archive.org. " +
+                "Vui lòng thử lại sau hoặc kiểm tra kết nối Internet.\n\n" +
+                "Để xem nội dung đầy đủ, vui lòng truy cập trực tiếp trang Archive.org của cuốn sách này.");
+        chapters.add(chapter);
+        
+        return chapters;
+    }
+
+    /**
+     * ChapterContent DTO for holding parsed chapter data
+     */
+    public static class ChapterContent {
+        private int chapterNumber;
+        private String title;
+        private String content;
+
+        public int getChapterNumber() { return chapterNumber; }
+        public void setChapterNumber(int chapterNumber) { this.chapterNumber = chapterNumber; }
+
+        public String getTitle() { return title; }
+        public void setTitle(String title) { this.title = title; }
+
+        public String getContent() { return content; }
+        public void setContent(String content) { this.content = content; }
     }
 
     /**

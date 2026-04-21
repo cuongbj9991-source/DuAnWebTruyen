@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { storyService } from '../services/api';
 import '../styles/ImportManager.css';
 
 function ImportManager() {
@@ -39,7 +38,7 @@ function ImportManager() {
       const response = await fetch(
         `${baseURL}/import/gutenberg?keyword=${gutenbergKeyword}&limit=${gutenbergLimit}`
       );
-      const data = await response.json();
+      await response.json();
       
       setMessage(`📚 Bắt đầu import từ Gutenberg: "${gutenbergKeyword}" (${gutenbergLimit} cuốn)`);
       setMessageType('info');
@@ -62,7 +61,7 @@ function ImportManager() {
       const response = await fetch(
         `${baseURL}/import/mangadex?keyword=${mangaDexKeyword}&limit=${mangaDexLimit}`
       );
-      const data = await response.json();
+      await response.json();
       
       setMessage(`🎨 Bắt đầu import từ MangaDex: "${mangaDexKeyword}" (${mangaDexLimit} truyện)`);
       setMessageType('info');
@@ -85,7 +84,7 @@ function ImportManager() {
       const response = await fetch(
         `${baseURL}/import/archive-org?keyword=${archiveOrgKeyword}&limit=${archiveOrgLimit}`
       );
-      const data = await response.json();
+      await response.json();
       
       setMessage(`📖 Bắt đầu import từ Archive.org: "${archiveOrgKeyword}" (${archiveOrgLimit} cuốn - Public Domain)`);
       setMessageType('info');
@@ -112,7 +111,7 @@ function ImportManager() {
         `${baseURL}/import/clear?source=${source}`,
         { method: 'POST' }
       );
-      const data = await response.json();
+      await response.json();
       
       setMessage(`🗑️ Đã xóa truyện từ ${source}`);
       setMessageType('success');
@@ -329,6 +328,7 @@ function ImportManager() {
             🗑️ Xóa tất cả Archive.org
           </button>
         </div>
+      </div>
 
       {/* Info Box */}
       <div className="info-box">

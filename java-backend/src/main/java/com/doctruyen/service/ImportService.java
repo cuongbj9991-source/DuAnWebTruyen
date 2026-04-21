@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -232,11 +233,14 @@ public class ImportService {
                         
                         storyRepository.save(story);
                         
-                        // Create sample chapters for archive.org books
-                        createSampleChapters(story);
+                        // Download and parse real content from Archive.org
+                        log.info("Downloading content for: {}", story.getTitle());
+                        var chapters = archiveOrgService.downloadAndParseContent(book.getId());
+                        createChaptersFromParsedContent(story, chapters);
                         
                         imported++;
-                        log.info("✅ Imported Archive.org book: {} by {}", story.getTitle(), story.getAuthor());
+                        log.info("✅ Imported Archive.org book: {} by {} with {} chapters", 
+                                 story.getTitle(), story.getAuthor(), chapters.size());
                     }
                     
                     page++;
@@ -280,6 +284,43 @@ public class ImportService {
             log.info("✅ Created 5 sample chapters for story: {}", story.getTitle());
         } catch (Exception e) {
             log.warn("Error creating sample chapters: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Create chapters from parsed Archive.org content
+     */
+    private void createChaptersFromParsedContent(Story story, List<ArchiveOrgService.ChapterContent> parsedChapters) {
+        try {
+            if (parsedChapters == null || parsedChapters.isEmpty()) {
+                log.warn("No chapters parsed, creating sample chapters instead");
+                createSampleChapters(story);
+                return;
+            }
+            
+            for (var parsedChapter : parsedChapters) {
+                Chapter chapter = new Chapter();
+                chapter.setStoryId(story.getId());
+                chapter.setChapterNumber(parsedChapter.getChapterNumber());
+                chapter.setTitle(parsedChapter.getTitle());
+                chapter.setContent(parsedChapter.getContent());
+                
+                // Calculate word count (rough estimate: 1 word ~ 5 characters)
+                int wordCount = Math.max(1, parsedChapter.getContent().length() / 5);
+                chapter.setWordCount(wordCount);
+                
+                chapter.setCreatedAt(LocalDateTime.now());
+                chapter.setUpdatedAt(LocalDateTime.now());
+                
+                chapterRepository.save(chapter);
+            }
+            
+            log.info("✅ Created {} chapters from Archive.org content for story: {}", 
+                     parsedChapters.size(), story.getTitle());
+        } catch (Exception e) {
+            log.error("Error creating chapters from parsed content: {}", e.getMessage());
+            // Fallback to sample chapters if parsing fails
+            createSampleChapters(story);
         }
     }
 
