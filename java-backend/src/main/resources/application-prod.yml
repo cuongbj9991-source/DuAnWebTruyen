@@ -1,10 +1,9 @@
 spring:
   application:
     name: story-service
-  # DataSource configured in DataSourceConfig.java with custom timezone handling
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     properties:
       hibernate:
         format_sql: true
@@ -22,7 +21,7 @@ spring:
       password: password
 
 server:
-  port: 8081
+  port: 8080
   servlet:
     context-path: /api
     encoding:
@@ -39,5 +38,5 @@ jwt:
 logging:
   level:
     root: INFO
-    com.doctruyen: DEBUG
-    org.springframework.security: DEBUG
+    com.doctruyen: INFO
+    org.springframework.security: INFO
