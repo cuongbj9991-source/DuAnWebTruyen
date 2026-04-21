@@ -66,6 +66,7 @@ public class StoryUploadService {
                 .map(this::convertToDTO);
     }
 
+    @SuppressWarnings("unchecked")
     public StoryUploadDTO getUploadById(Long id) {
         return uploadRepository.findById(id)
                 .map(this::convertToDTO)
@@ -73,6 +74,7 @@ public class StoryUploadService {
     }
 
     @Transactional
+    @SuppressWarnings("unchecked")
     public StoryUploadDTO updateUpload(Long id, Long userId, UpdateUploadDTO dto) {
         StoryUpload upload = uploadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Story upload not found"));
@@ -97,6 +99,7 @@ public class StoryUploadService {
     }
 
     @Transactional
+    @SuppressWarnings("unchecked")
     public void deleteUpload(Long id, Long userId) {
         StoryUpload upload = uploadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Story upload not found"));
@@ -110,6 +113,7 @@ public class StoryUploadService {
     }
 
     @Transactional
+    @SuppressWarnings("unchecked")
     public StoryUploadDTO approveUpload(Long id) {
         StoryUpload upload = uploadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Story upload not found"));
@@ -124,6 +128,7 @@ public class StoryUploadService {
     }
 
     @Transactional
+    @SuppressWarnings("unchecked")
     public StoryUploadDTO rejectUpload(Long id, String reason) {
         StoryUpload upload = uploadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Story upload not found"));
@@ -138,6 +143,7 @@ public class StoryUploadService {
     }
 
     @Transactional
+    @SuppressWarnings("unchecked")
     public void publishUpload(Long id, Long userId) {
         StoryUpload upload = uploadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Story upload not found"));

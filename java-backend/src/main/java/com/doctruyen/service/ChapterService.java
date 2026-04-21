@@ -40,6 +40,7 @@ public class ChapterService {
         return convertToDTO(chapter);
     }
 
+    @SuppressWarnings("unchecked")
     public ChapterDTO getChapterById(Long id) {
         return chapterRepository.findById(id)
                 .map(this::convertToDTO)

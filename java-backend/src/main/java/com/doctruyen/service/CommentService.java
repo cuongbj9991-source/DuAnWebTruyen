@@ -29,6 +29,7 @@ public class CommentService {
                 .map(this::convertToDTO);
     }
 
+    @SuppressWarnings("unchecked")
     public CommentDTO getCommentById(Long id) {
         return commentRepository.findById(id)
                 .map(this::convertToDTO)
@@ -65,6 +66,7 @@ public class CommentService {
     }
 
     @Transactional
+    @SuppressWarnings("unchecked")
     public void deleteComment(Long id) {
         if (!commentRepository.existsById(id)) {
             throw new RuntimeException("Comment not found");

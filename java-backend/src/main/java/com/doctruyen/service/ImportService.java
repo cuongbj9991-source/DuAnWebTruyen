@@ -1,6 +1,5 @@
 package com.doctruyen.service;
 
-import com.doctruyen.dto.StoryDTO;
 import com.doctruyen.entity.Story;
 import com.doctruyen.entity.Chapter;
 import com.doctruyen.repository.StoryRepository;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -177,53 +175,6 @@ public class ImportService {
             log.info("✅ MangaDex import completed: {} stories imported", imported);
         } catch (Exception e) {
             log.error("❌ MangaDex import failed: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Fetch and import chapters from MangaDex for a story
-     */
-    private void fetchMangaDexChapters(Story story, String mangaId) {
-        try {
-            var chapters = mangaDexService.getChaptersForManga(mangaId, 10);
-            
-            int chapterNumber = 1;
-            for (var ch : chapters) {
-                try {
-                    Chapter chapter = new Chapter();
-                    chapter.setStoryId(story.getId());
-                    chapter.setChapterNumber(chapterNumber);
-                    chapter.setTitle(ch.getTitle() != null && !ch.getTitle().isEmpty() ? 
-                                    ch.getTitle() : ("Chương " + ch.getChapterNumber()));
-                    
-                    // Fetch actual chapter pages (images)
-                    String pages = mangaDexService.getChapterPages(ch.getId());
-                    chapter.setPages(pages);
-                    
-                    // Fetch actual chapter content as fallback
-                    String content = mangaDexService.getChapterContent(ch.getId());
-                    chapter.setContent(content);
-                    chapter.setWordCount(content.length() / 5); // Rough estimate
-                    chapter.setCreatedAt(LocalDateTime.now());
-                    chapter.setUpdatedAt(LocalDateTime.now());
-                    
-                    chapterRepository.save(chapter);
-                    chapterNumber++;
-                } catch (Exception e) {
-                    log.warn("Error fetching chapter {}: {}", ch.getChapterNumber(), e.getMessage());
-                }
-            }
-            
-            if (chapterNumber > 1) {
-                log.info("✅ Imported {} chapters for story: {}", (chapterNumber - 1), story.getTitle());
-            } else {
-                // Fallback to sample chapters if no real chapters found
-                createSampleChapters(story);
-            }
-        } catch (Exception e) {
-            log.warn("Error fetching MangaDex chapters: {}", e.getMessage());
-            // Fallback to sample chapters
-            createSampleChapters(story);
         }
     }
 

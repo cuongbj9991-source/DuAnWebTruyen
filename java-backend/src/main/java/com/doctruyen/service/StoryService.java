@@ -22,13 +22,10 @@ import java.util.stream.Collectors;
 public class StoryService {
     private final StoryRepository storyRepository;
 
+    @SuppressWarnings("unchecked")
     public Page<StoryDTO> getAllStories(Pageable pageable) {
         try {
             var result = storyRepository.findAll(pageable);
-            if (result == null) {
-                log.warn("StoryRepository.findAll returned null!");
-                return Page.empty(pageable);
-            }
             return result.map(story -> {
                 try {
                     return convertToDTO(story);
@@ -43,6 +40,7 @@ public class StoryService {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public StoryDTO getStoryById(Long id) {
         return storyRepository.findById(id)
                 .map(this::convertToDTO)
