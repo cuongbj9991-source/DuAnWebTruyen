@@ -15,7 +15,9 @@ import java.util.List;
 @Service
 @Slf4j
 public class ArchiveOrgService {
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.ALWAYS)
+            .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final String ARCHIVE_API = "https://archive.org/advancedsearch.php";
 
@@ -273,27 +275,95 @@ public class ArchiveOrgService {
     public List<ChapterContent> downloadAndParseContent(String identifier) {
         List<ChapterContent> chapters = new ArrayList<>();
         try {
-            // Try to download the text file
-            String downloadUrl = "https://archive.org/download/" + identifier + "/" + identifier + "_djvu.txt";
+            // First, get metadata to find the actual text file
+            String metadataUrl = "https://archive.org/metadata/" + identifier;
+            log.info("Fetching metadata from: {}", metadataUrl);
             
-            log.info("Attempting to download content from: {}", downloadUrl);
-            
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(downloadUrl))
+            HttpRequest metadataRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(metadataUrl))
                     .GET()
                     .header("User-Agent", "DocTruyen/1.0")
-                    .timeout(java.time.Duration.ofSeconds(30))
+                    .timeout(java.time.Duration.ofSeconds(15))
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> metadataResponse = httpClient.send(metadataRequest, HttpResponse.BodyHandlers.ofString());
             
-            if (response.statusCode() != 200) {
-                log.warn("Failed to download content from Archive.org (Status: {}), using default chapters", response.statusCode());
-                // Return default chapters if download fails
+            if (metadataResponse.statusCode() != 200) {
+                log.warn("Failed to get metadata (Status: {}), using default chapters", metadataResponse.statusCode());
                 return createDefaultChapters();
             }
 
-            String content = response.body();
+            // Parse metadata to find text files
+            JsonNode root = objectMapper.readTree(metadataResponse.body());
+            String downloadUrl = null;
+            
+            if (root.has("files")) {
+                // Look for text files: .txt, _djvu.txt, etc.
+                for (JsonNode file : root.get("files")) {
+                    if (file.has("name")) {
+                        String name = file.get("name").asText();
+                        // Prefer .txt files but can use other formats
+                        if (name.endsWith(".txt") || name.endsWith("_djvu.txt")) {
+                            downloadUrl = "https://archive.org/download/" + identifier + "/" + name;
+                            log.info("Found text file: {}", name);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // If no text file found in metadata, try common patterns
+            if (downloadUrl == null) {
+                // Try common filename patterns
+                String[] tryUrls = {
+                    "https://archive.org/download/" + identifier + "/" + identifier + "_djvu.txt",
+                    "https://archive.org/download/" + identifier + "/" + identifier + ".txt",
+                    "https://archive.org/download/" + identifier + "/" + identifier + "_plaintext.txt"
+                };
+                
+                for (String url : tryUrls) {
+                    try {
+                        HttpRequest headRequest = HttpRequest.newBuilder()
+                                .uri(URI.create(url))
+                                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                                .header("User-Agent", "DocTruyen/1.0")
+                                .timeout(java.time.Duration.ofSeconds(5))
+                                .build();
+                        
+                        HttpResponse<Void> headResponse = httpClient.send(headRequest, HttpResponse.BodyHandlers.discarding());
+                        if (headResponse.statusCode() == 200) {
+                            downloadUrl = url;
+                            log.info("Found file at: {}", url);
+                            break;
+                        }
+                    } catch (Exception e) {
+                        log.debug("File not found at {}", url);
+                    }
+                }
+            }
+            
+            if (downloadUrl == null) {
+                log.warn("No text file found for identifier: {}", identifier);
+                return createDefaultChapters();
+            }
+            
+            // Now download the actual content
+            log.info("Downloading from: {}", downloadUrl);
+            HttpRequest contentRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(downloadUrl))
+                    .GET()
+                    .header("User-Agent", "DocTruyen/1.0")
+                    .timeout(java.time.Duration.ofSeconds(60))  // Longer timeout for actual download
+                    .build();
+
+            HttpResponse<String> contentResponse = httpClient.send(contentRequest, HttpResponse.BodyHandlers.ofString());
+            
+            if (contentResponse.statusCode() != 200) {
+                log.warn("Failed to download content (Status: {}), using default chapters", contentResponse.statusCode());
+                return createDefaultChapters();
+            }
+
+            String content = contentResponse.body();
             log.info("Downloaded {} bytes from Archive.org", content.length());
             
             // Parse chapters from content
@@ -307,7 +377,7 @@ public class ArchiveOrgService {
             log.info("Successfully parsed {} chapters from {}", chapters.size(), identifier);
             return chapters;
         } catch (Exception e) {
-            log.error("Error downloading/parsing content from Archive.org: {}", e.getMessage());
+            log.error("Error downloading/parsing content from Archive.org: {}", e.getMessage(), e);
             return createDefaultChapters();
         }
     }
