@@ -68,6 +68,30 @@ public class ImportController {
     }
 
     /**
+     * Import books from Archive.org (Public Domain)
+     * GET /api/import/archive-org?keyword=fiction&limit=50
+     */
+    @GetMapping("/archive-org")
+    public ResponseEntity<Map<String, Object>> importFromArchiveOrg(
+            @RequestParam(defaultValue = "fiction") String keyword,
+            @RequestParam(defaultValue = "50") int limit) {
+        
+        log.info("Received import request from Archive.org: keyword={}, limit={}", keyword, limit);
+        
+        // Run async import
+        importService.importFromArchiveOrg(keyword, limit);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Archive.org import started (Public Domain)");
+        response.put("keyword", keyword);
+        response.put("limit", limit);
+        response.put("status", "importing");
+        response.put("note", "Archive.org contains only public domain texts - completely legal!");
+        
+        return ResponseEntity.accepted().body(response);
+    }
+
+    /**
      * Get import statistics
      * GET /api/import/stats
      */
@@ -79,6 +103,7 @@ public class ImportController {
         response.put("gutenberg", stats.gutenberg);
         response.put("mangaDex", stats.mangaDex);
         response.put("openLibrary", stats.openLibrary);
+        response.put("archiveOrg", stats.archiveOrg);
         response.put("total", stats.total);
         
         return ResponseEntity.ok(response);

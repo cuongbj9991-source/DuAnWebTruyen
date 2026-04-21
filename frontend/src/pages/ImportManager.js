@@ -7,6 +7,8 @@ function ImportManager() {
   const [gutenbergLimit, setGutenbergLimit] = useState(50);
   const [mangaDexKeyword, setMangaDexKeyword] = useState('action');
   const [mangaDexLimit, setMangaDexLimit] = useState(50);
+  const [archiveOrgKeyword, setArchiveOrgKeyword] = useState('fiction');
+  const [archiveOrgLimit, setArchiveOrgLimit] = useState(50);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -75,6 +77,29 @@ function ImportManager() {
     }
   };
 
+  const handleImportArchiveOrg = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const baseURL = process.env.REACT_APP_STORY_SERVICE || 'http://localhost:8081/api';
+      const response = await fetch(
+        `${baseURL}/import/archive-org?keyword=${archiveOrgKeyword}&limit=${archiveOrgLimit}`
+      );
+      const data = await response.json();
+      
+      setMessage(`📖 Bắt đầu import từ Archive.org: "${archiveOrgKeyword}" (${archiveOrgLimit} cuốn - Public Domain)`);
+      setMessageType('info');
+      
+      // Refresh stats after a delay
+      setTimeout(fetchStats, 2000);
+    } catch (error) {
+      setMessage(`❌ Lỗi: ${error.message}`);
+      setMessageType('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleClearSource = async (source) => {
     if (!window.confirm(`Xóa tất cả truyện từ ${source}? Hành động này không thể hoàn tác!`)) {
       return;
@@ -124,6 +149,11 @@ function ImportManager() {
               <h3>📖 OpenLibrary</h3>
               <p className="stat-number">{stats.openLibrary}</p>
               <p className="stat-label">tài liệu</p>
+            </div>
+            <div className="stat-card archiveorg">
+              <h3>🏛️ Archive.org</h3>
+              <p className="stat-number">{stats.archiveOrg}</p>
+              <p className="stat-label">Public Domain</p>
             </div>
             <div className="stat-card total">
               <h3>✨ Tổng cộng</h3>
@@ -246,7 +276,59 @@ function ImportManager() {
             🗑️ Xóa tất cả MangaDex
           </button>
         </div>
-      </div>
+
+        {/* Archive.org Import */}
+        <div className="form-section">
+          <h2>🏛️ Import từ Archive.org</h2>
+          <p className="description">
+            Archive.org có hàng triệu sách Public Domain - hoàn toàn miễn phí và hợp pháp!
+            <br />
+            ✅ <strong>Không vi phạm bản quyền</strong> - Tất cả nội dung đều Public Domain
+          </p>
+          
+          <form onSubmit={handleImportArchiveOrg}>
+            <div className="form-group">
+              <label htmlFor="archiveorg-keyword">Từ khóa tìm kiếm:</label>
+              <input
+                id="archiveorg-keyword"
+                type="text"
+                value={archiveOrgKeyword}
+                onChange={(e) => setArchiveOrgKeyword(e.target.value)}
+                placeholder="e.g., fiction, adventure, classic, science"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="archiveorg-limit">Số lượng tối đa:</label>
+              <input
+                id="archiveorg-limit"
+                type="number"
+                value={archiveOrgLimit}
+                onChange={(e) => setArchiveOrgLimit(e.target.value ? parseInt(e.target.value) : 50)}
+                min="1"
+                max="500"
+                disabled={loading}
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              className="btn-primary"
+              disabled={loading}
+            >
+              {loading ? '⏳ Đang import...' : '🚀 Bắt đầu Import'}
+            </button>
+          </form>
+
+          <button 
+            className="btn-danger"
+            onClick={() => handleClearSource('Archive.org')}
+            disabled={loading || stats?.archiveOrg === 0}
+          >
+            🗑️ Xóa tất cả Archive.org
+          </button>
+        </div>
 
       {/* Info Box */}
       <div className="info-box">
@@ -258,6 +340,7 @@ function ImportManager() {
           <li>⚠️ Xóa truyện sẽ xóa vĩnh viễn, không thể khôi phục</li>
           <li>📖 Truyện từ Gutenberg được đánh dấu là "Sách điện tử" với loại "dịch"</li>
           <li>🎨 Truyện từ MangaDex được đánh dấu là "Tranh" với loại "dịch"</li>
+          <li>🏛️ <strong>Archive.org sách được đánh dấu là "Public Domain" - 100% hợp pháp!</strong></li>
         </ul>
       </div>
     </div>

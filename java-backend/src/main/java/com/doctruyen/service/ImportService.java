@@ -19,6 +19,7 @@ public class ImportService {
     
     private final GutenbergService gutenbergService;
     private final MangaDexService mangaDexService;
+    private final ArchiveOrgService archiveOrgService;
     private final StoryRepository storyRepository;
     private final ChapterRepository chapterRepository;
 
@@ -179,6 +180,79 @@ public class ImportService {
     }
 
     /**
+     * Import books from Archive.org (Public Domain)
+     * Safe: Archive.org provides only public domain texts
+     */
+    @Async
+    public void importFromArchiveOrg(String keyword, int limit) {
+        try {
+            log.info("Starting Archive.org import for keyword: {}", keyword);
+            
+            int page = 1;
+            int imported = 0;
+            
+            while (imported < limit) {
+                try {
+                    var books = archiveOrgService.searchBooks(keyword, page);
+                    if (books.isEmpty()) {
+                        if (page == 1 && imported == 0) {
+                            log.warn("⚠️ No books found on Archive.org for: {}", keyword);
+                        }
+                        break;
+                    }
+                    
+                    for (var book : books) {
+                        if (imported >= limit) break;
+                        
+                        // Check if story already exists
+                        String externalId = "archive_" + book.getId();
+                        if (storyRepository.existsByExternalId(externalId)) {
+                            log.debug("Book already imported: {}", book.getTitle());
+                            continue;
+                        }
+                        
+                        // Create new story
+                        Story story = new Story();
+                        story.setTitle(book.getTitle());
+                        story.setAuthor(book.getAuthor() != null ? book.getAuthor() : "Unknown");
+                        story.setDescription(book.getDescription() != null ? book.getDescription() : "");
+                        story.setCoverUrl(book.getCoverUrl());
+                        story.setGenre("Literature");
+                        story.setType("English");
+                        story.setStatus("completed");
+                        story.setSource("Archive.org");
+                        story.setExternalId(externalId);
+                        story.setIsPublic(true);
+                        story.setViewsTotal(0L);
+                        story.setLikes(0);
+                        story.setRating(0.0);
+                        story.setRatingCount(0);
+                        story.setCreatedAt(LocalDateTime.now());
+                        story.setUpdatedAt(LocalDateTime.now());
+                        
+                        storyRepository.save(story);
+                        
+                        // Create sample chapters for archive.org books
+                        createSampleChapters(story);
+                        
+                        imported++;
+                        log.info("✅ Imported Archive.org book: {} by {}", story.getTitle(), story.getAuthor());
+                    }
+                    
+                    page++;
+                } catch (Exception e) {
+                    log.error("Error importing from Archive.org page {}: {}", page, e.getMessage());
+                    break;
+                }
+            }
+            
+            log.info("✅ Archive.org import completed: {} books imported", imported);
+        } catch (Exception e) {
+            log.error("❌ Archive.org import failed: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Create sample chapters as fallback
      */
     private void createSampleChapters(Story story) {
@@ -273,11 +347,12 @@ public class ImportService {
             long gutenbergCount = storyRepository.countBySource("Gutenberg");
             long mangaDexCount = storyRepository.countBySource("MangaDex");
             long openLibraryCount = storyRepository.countBySource("OpenLibrary");
+            long archiveOrgCount = storyRepository.countBySource("Archive.org");
             
-            return new ImportStats(gutenbergCount, mangaDexCount, openLibraryCount);
+            return new ImportStats(gutenbergCount, mangaDexCount, openLibraryCount, archiveOrgCount);
         } catch (Exception e) {
             log.error("Error getting import stats: {}", e.getMessage());
-            return new ImportStats(0, 0, 0);
+            return new ImportStats(0, 0, 0, 0);
         }
     }
 
@@ -301,13 +376,19 @@ public class ImportService {
         public final long gutenberg;
         public final long mangaDex;
         public final long openLibrary;
+        public final long archiveOrg;
         public final long total;
 
         public ImportStats(long gutenberg, long mangaDex, long openLibrary) {
+            this(gutenberg, mangaDex, openLibrary, 0);
+        }
+
+        public ImportStats(long gutenberg, long mangaDex, long openLibrary, long archiveOrg) {
             this.gutenberg = gutenberg;
             this.mangaDex = mangaDex;
             this.openLibrary = openLibrary;
-            this.total = gutenberg + mangaDex + openLibrary;
+            this.archiveOrg = archiveOrg;
+            this.total = gutenberg + mangaDex + openLibrary + archiveOrg;
         }
     }
 }
