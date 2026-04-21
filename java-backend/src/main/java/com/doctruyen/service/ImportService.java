@@ -261,6 +261,17 @@ public class ImportService {
      */
     private void createSampleChapters(Story story) {
         try {
+            String fallbackMessage = "\n\n--- NỘI DUNG PLACEHOLDER ---\n" +
+                    "⚠️ Chương này hiển thị nội dung mẫu vì không thể tải được nội dung đầy đủ từ " + story.getSource() + ".\n" +
+                    "Điều này có thể xảy ra do:\n" +
+                    "• Tệp không được công khai hoặc bị giới hạn truy cập\n" +
+                    "• Lỗi kết nối với máy chủ\n" +
+                    "• Tệp chưa được xử lý\n\n" +
+                    "Để xem nội dung đầy đủ, vui lòng:\n" +
+                    "1. Truy cập trực tiếp: " + story.getSource() + "\n" +
+                    "2. Hoặc liên hệ để tải lên nội dung thực\n" +
+                    "3. Hoặc chọn một cuốn sách khác có nội dung đầy đủ";
+            
             String[] sampleContent = {
                 "Chương bắt đầu với một cảnh mở bộ lộc toàn bộ bối cảnh của câu chuyện. Nhân vật chính được giới thiệu và độc giả bắt đầu tìm hiểu về tính cách, động lực và mục tiêu của họ.",
                 "Xung đột chính bắt đầu xuất hiện khi nhân vật chính gặp phải một thách thức quan trọng. Điều này tạo ra sự căng thẳng và lôi cuốn độc giả vào câu chuyện.",
@@ -274,7 +285,7 @@ public class ImportService {
                 chapter.setStoryId(story.getId());
                 chapter.setChapterNumber(i);
                 chapter.setTitle("Chương " + i);
-                chapter.setContent(sampleContent[i - 1] + "\n\n[Nội dung chương này là placeholder từ " + story.getSource() + "]");
+                chapter.setContent(sampleContent[i - 1] + fallbackMessage);
                 chapter.setWordCount(200);
                 chapter.setCreatedAt(LocalDateTime.now());
                 chapter.setUpdatedAt(LocalDateTime.now());
